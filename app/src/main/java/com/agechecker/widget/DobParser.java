@@ -150,17 +150,26 @@ public final class DobParser {
         }
         if (mi < 0) return null;
 
-        int[] day = readDay(tok, mi + 1);
+        int[] day = null;
         List<String> yearTokens;
-        if (day != null) {
-            yearTokens = slice(tok, day[1], tok.length);
-        } else {
-            day = readDay(tok, 0);
-            if (day == null || day[1] > mi) return null;
-            for (int i = day[1]; i < mi; i++) {
-                if (!tok[i].equals("of") && !tok[i].equals("the")) return null;
+        // Prefer "the seventh of December ..." when a day appears before the month.
+        // Otherwise the first word of "two thousand" can be mistaken for day 2.
+        if (mi > 0) {
+            int[] before = readDay(tok, 0);
+            if (before != null && before[1] <= mi) {
+                boolean onlyJoiners = true;
+                for (int i = before[1]; i < mi; i++) {
+                    if (!tok[i].equals("of") && !tok[i].equals("the")) onlyJoiners = false;
+                }
+                if (onlyJoiners) day = before;
             }
+        }
+        if (day != null) {
             yearTokens = slice(tok, mi + 1, tok.length);
+        } else {
+            day = readDay(tok, mi + 1);
+            if (day == null) return null;
+            yearTokens = slice(tok, day[1], tok.length);
         }
         Integer year = readYear(yearTokens);
         if (year == null) return null;
