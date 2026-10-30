@@ -1,74 +1,221 @@
 package com.agechecker.widget;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
-import android.graphics.*;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
-import android.text.*;
-import android.view.*;
+import android.text.Editable;
+import android.text.InputFilter;
+import android.text.TextWatcher;
+import android.view.Gravity;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.*;
-import java.time.*;
-import java.time.format.*;
-import java.util.*;
-import java.util.regex.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Locale;
 
 public class InputActivity extends Activity {
-    EditText dob; TextView result; DotView background;
-    static final int SPEECH = 12;
-    static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("MM/dd/uuuu").withResolverStyle(ResolverStyle.STRICT);
-    @Override public void onCreate(Bundle b) {
-        super.onCreate(b);
-        getWindow().setStatusBarColor(Color.BLACK); getWindow().setNavigationBarColor(Color.BLACK);
-        FrameLayout root = new FrameLayout(this);
-        background = new DotView(); root.addView(background);
-        LinearLayout panel = new LinearLayout(this); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(24),dp(46),dp(24),dp(20));
-        TextView title = label("◷  Age Checker", 27, Color.WHITE); title.setTypeface(null,1); panel.addView(title);
-        TextView caption = label("Date of birth", 15, 0xffbbbbbb); LinearLayout.LayoutParams cap = new LinearLayout.LayoutParams(-1,-2); cap.topMargin=dp(32); panel.addView(caption,cap);
-        LinearLayout entry = new LinearLayout(this); entry.setOrientation(LinearLayout.HORIZONTAL);
-        dob = new EditText(this); dob.setSingleLine(true); dob.setTextColor(Color.WHITE); dob.setHintTextColor(0xffaaaaaa); dob.setHint("MM/DD/YYYY"); dob.setTextSize(19); dob.setInputType(2); dob.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xffd48b39));
-        entry.addView(dob,new LinearLayout.LayoutParams(0,dp(58),1));
-        Button mic = new Button(this); mic.setText("🎙"); mic.setContentDescription("Speak date of birth"); mic.setTextSize(21); entry.addView(mic,new LinearLayout.LayoutParams(dp(68),dp(58)));
-        mic.setOnClickListener(v->listen());
-        LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-1,-2); ep.topMargin=dp(10); panel.addView(entry,ep);
-        dob.addTextChangedListener(new TextWatcher() { boolean busy; public void beforeTextChanged(CharSequence s,int st,int c,int a){} public void onTextChanged(CharSequence s,int st,int before,int count){if(busy)return;String digits=s.toString().replaceAll("\\D",""); if(digits.length()>8)digits=digits.substring(0,8); String out=digits.length()>4?digits.substring(0,2)+"/"+digits.substring(2,4)+"/"+digits.substring(4):digits.length()>2?digits.substring(0,2)+"/"+digits.substring(2):digits; if(!out.equals(s.toString())){busy=true;dob.setText(out);dob.setSelection(out.length());busy=false;}} public void afterTextChanged(Editable e){} });
-        Button check = new Button(this); check.setText("CHECK AGE  →"); check.setTextColor(Color.BLACK); check.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xffe3a453)); check.setOnClickListener(v->calculate());
-        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1,dp(56)); cp.topMargin=dp(22); panel.addView(check,cp);
-        result=label("Enter DOB or tap the microphone",20,0xffffd6a4); result.setGravity(Gravity.CENTER); result.setPadding(dp(12),dp(18),dp(12),dp(18));
-        LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,-2);rp.topMargin=dp(25);panel.addView(result,rp);
-        root.addView(panel); setContentView(root);
-        String saved=getSharedPreferences("age",MODE_PRIVATE).getString("dob",""); if(!saved.isEmpty()){dob.setText(saved);calculate();}
+    private static final int SPEECH = 12;
+    private EditText dob;
+    private TextView resultTitle, resultAge;
+    private LinearLayout resultCard;
+    private RibbonView ribbons;
+    private Button submit;
+    private boolean formatting;
+
+    @Override public void onCreate(Bundle state) {
+        super.onCreate(state);
+        setFinishOnTouchOutside(true);
+        buildUi();
+        String saved = Themes.prefs(this).getString("dob", "");
+        if (state == null && !saved.isEmpty()) dob.setText(saved);
+        if (!saved.isEmpty()) showSavedResult(saved);
+        if (state == null && getIntent().getBooleanExtra("start_speech", false)) dob.postDelayed(this::listen, 300);
     }
-    int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
-    TextView label(String s,int size,int color){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);return t;}
-    void calculate(){
-        try {LocalDate birth=LocalDate.parse(dob.getText().toString(),FORMAT); LocalDate now=LocalDate.now();if(birth.isAfter(now)||birth.getYear()<1900)throw new Exception();
-            int age=Period.between(birth,now).getYears();boolean ok=age>=21;
-            result.setText((ok?"✓  21 OR ABOVE":"✕  BELOW 21")+"\nAge: "+age+" years");result.setTextColor(ok?0xff65e9a2:0xffff8181);
-            getSharedPreferences("age",MODE_PRIVATE).edit().putString("dob",birth.format(FORMAT)).apply();AgeWidget.refresh(this);
-        }catch(Exception ex){result.setText("Check the date: MM/DD/YYYY");result.setTextColor(0xffff8181);}
+
+    @Override public void onStart() {
+        super.onStart();
+        Window w = getWindow();
+        WindowManager.LayoutParams p = w.getAttributes();
+        p.width = Math.min(dp(520), getResources().getDisplayMetrics().widthPixels - dp(24));
+        p.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        p.gravity = Gravity.CENTER;
+        p.dimAmount = .62f;
+        w.setAttributes(p);
+        w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
     }
-    void listen(){
-        Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"en-US");i.putExtra(RecognizerIntent.EXTRA_PROMPT,"Say a date, e.g. December seven two thousand");
-        try{startActivityForResult(i,SPEECH);}catch(Exception e){Toast.makeText(this,"Google speech recognition is unavailable. Use keyboard voice typing.",Toast.LENGTH_LONG).show();}
+
+    private void buildUi() {
+        FrameLayout shell = new FrameLayout(this);
+        shell.setPadding(dp(1), dp(1), dp(1), dp(1));
+        ribbons = new RibbonView(this);
+        shell.addView(ribbons, new FrameLayout.LayoutParams(-1, -1));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(24), dp(22), dp(24), dp(22));
+        scroll.addView(body);
+
+        LinearLayout heading = row();
+        TextView title = text("▣  Age Checker", 25, Color.WHITE, true);
+        heading.addView(title, new LinearLayout.LayoutParams(0, dp(48), 1));
+        Button themes = button("COLORS", dp(82), 40);
+        themes.setOnClickListener(v -> showThemeDialog());
+        heading.addView(themes);
+        Button close = button("×", dp(46), 40);
+        close.setContentDescription("Close"); close.setOnClickListener(v -> finish());
+        heading.addView(close);
+        body.addView(heading);
+
+        TextView hint = text("Date of birth", 14, 0xFFBCC4D8, false);
+        LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(-1, -2); hp.topMargin = dp(16); body.addView(hint, hp);
+
+        LinearLayout entry = row();
+        entry.setPadding(dp(14), 0, dp(6), 0);
+        entry.setBackground(round(0xD91A2138, 26, 0x554F608B, 1));
+        dob = new EditText(this);
+        dob.setSingleLine(); dob.setHint("MM/DD/YYYY"); dob.setTextSize(18); dob.setTextColor(Color.WHITE);
+        dob.setHintTextColor(0xFF99A3B8); dob.setBackgroundColor(Color.TRANSPARENT);
+        dob.setInputType(android.text.InputType.TYPE_CLASS_NUMBER); dob.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        dob.setFilters(new InputFilter[]{new InputFilter.LengthFilter(10)});
+        entry.addView(dob, new LinearLayout.LayoutParams(0, dp(58), 1));
+        Button mic = button("MIC", dp(58), 44); mic.setContentDescription("Speak date of birth"); mic.setOnClickListener(v -> listen()); entry.addView(mic);
+        submit = button("→", dp(58), 48); submit.setTextSize(27); submit.setOnClickListener(v -> calculate()); entry.addView(submit);
+        LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-1, dp(60)); ep.topMargin = dp(7); body.addView(entry, ep);
+
+        dob.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int st, int c, int a) { }
+            public void onTextChanged(CharSequence s, int st, int b, int c) {
+                if (formatting) return;
+                String f = DobParser.formatTyping(s.toString());
+                if (!f.equals(s.toString())) { formatting = true; dob.setText(f); dob.setSelection(f.length()); formatting = false; }
+            }
+            public void afterTextChanged(Editable e) { }
+        });
+        dob.setOnEditorActionListener((v, action, event) -> { if (action == EditorInfo.IME_ACTION_DONE) { calculate(); return true; } return false; });
+
+        resultCard = row(); resultCard.setGravity(Gravity.CENTER_VERTICAL); resultCard.setPadding(dp(17), dp(14), dp(17), dp(14));
+        resultCard.setBackground(round(0xD91B2036, 23, 0x55606B8C, 1));
+        TextView statusIcon = text("○", 34, 0xFFB6C0D5, true); statusIcon.setId(android.R.id.icon); resultCard.addView(statusIcon, new LinearLayout.LayoutParams(dp(56), dp(56)));
+        LinearLayout labels = new LinearLayout(this); labels.setOrientation(LinearLayout.VERTICAL);
+        resultTitle = text("READY TO CHECK", 20, Color.WHITE, true);
+        resultAge = text("Enter DOB or use the microphone", 14, 0xFFCAD0DE, false);
+        labels.addView(resultTitle); labels.addView(resultAge); resultCard.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2); rp.topMargin = dp(14); body.addView(resultCard, rp);
+        TextView privacy = text("Your date is calculated locally on this device.", 12, 0xFF9099AD, false); privacy.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-1, -2); pp.topMargin = dp(11); body.addView(privacy, pp);
+        shell.addView(scroll);
+        setContentView(shell);
+        applyAccent();
     }
-    @Override protected void onActivityResult(int request,int code,Intent data){super.onActivityResult(request,code,data);if(request==SPEECH&&code==RESULT_OK&&data!=null){ArrayList<String> a=data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);if(a!=null&&!a.isEmpty()){String parsed=parseSpoken(a.get(0));if(parsed!=null){dob.setText(parsed);result.setText("Recognized: "+parsed+"\nTap CHECK AGE to confirm");result.setTextColor(0xffffd6a4);}else{result.setText("Heard: "+a.get(0)+"\nPlease type or repeat the date");}}}}
-    String parseSpoken(String raw){
-        String s=raw.toLowerCase(Locale.US).replaceAll("(st|nd|rd|th)\\b","").replaceAll("[,.-]"," ").trim();
-        String[] months={"january","february","march","april","may","june","july","august","september","october","november","december"};
-        for(int m=0;m<12;m++){Matcher match=Pattern.compile("\\b"+months[m]+"\\s+(\\d{1,2})\\s+(\\d{4})\\b").matcher(s);if(match.find())return normalize(m+1,Integer.parseInt(match.group(1)),Integer.parseInt(match.group(2)));}
-        Matcher numeric=Pattern.compile("\\b(\\d{1,2})[ /](\\d{1,2})[ /](\\d{4})\\b").matcher(s);if(numeric.find())return normalize(Integer.parseInt(numeric.group(1)),Integer.parseInt(numeric.group(2)),Integer.parseInt(numeric.group(3)));
-        // Recognizer can transcribe the year as separate words; avoid guessing ambiguous dates.
-        return null;
+
+    private void calculate() {
+        DobParser.Parse parsed = DobParser.parseManual(dob.getText().toString(), LocalDate.now());
+        if (parsed.error != null) { showError(parsed.error); return; }
+        int age = AgeCalc.completedYears(parsed.date, LocalDate.now());
+        Themes.prefs(this).edit().putString("dob", parsed.date.format(DobParser.DISPLAY)).apply();
+        showResult(age);
+        Themes.onAgeChecked(this);
+        ribbons.setColors(Themes.colors(this)); applyAccent(); AgeWidget.refresh(this);
     }
-    String normalize(int m,int d,int y){try{return LocalDate.of(y,m,d).format(FORMAT);}catch(Exception e){return null;}}
-    class DotView extends View {
-        Paint p=new Paint(3);long start=System.currentTimeMillis();
-        DotView(){super(InputActivity.this);setLayerType(View.LAYER_TYPE_SOFTWARE,null);}
-        @Override protected void onDraw(Canvas c){super.onDraw(c);c.drawColor(Color.BLACK);float w=getWidth(),h=getHeight(),time=(System.currentTimeMillis()-start)/1000f;
-            float spacing=dp(16);for(float y=dp(32);y<h-dp(35);y+=spacing)for(float x=dp(16);x<w-dp(10);x+=spacing){float wave=(float)Math.sin(time*1.3+x*.009+y*.007);float fall=(float)Math.max(.12,1-Math.abs(x-w*.57)/w-Math.abs(y-h*.46)/h);float r=(1.1f+wave*.7f)*getResources().getDisplayMetrics().density*fall;p.setColor(Color.argb((int)(140*fall),225,135,42));c.drawCircle(x,y,Math.max(.35f,r),p);}
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dp(1)/2f);p.setColor(0xff77716b);Path web=new Path();float ox=w-dp(10),oy=dp(15);for(int i=0;i<6;i++){float angle=(float)(Math.PI+i*Math.PI/9);web.moveTo(ox,oy);web.lineTo(ox+(float)Math.cos(angle)*dp(130),oy-(float)Math.sin(angle)*dp(130));}for(int j=1;j<5;j++){float rad=dp(j*27);web.moveTo(ox-rad,oy);web.quadTo(ox-rad*.55f,oy+rad*.6f,ox,oy+rad);}c.drawPath(web,p);
-            float spiderY=dp(90)+(float)Math.sin(time*.9)*dp(25);float sx=w-dp(62);c.drawLine(sx,oy,sx,spiderY,p);p.setStyle(Paint.Style.FILL);p.setColor(0xff9c928b);c.drawCircle(sx,spiderY,dp(3),p);p.setStyle(Paint.Style.STROKE);invalidate();
+
+    private void showSavedResult(String saved) {
+        try { showResult(AgeCalc.completedYears(LocalDate.parse(saved, DobParser.DISPLAY), LocalDate.now())); }
+        catch (RuntimeException ignored) { }
+    }
+
+    private void showResult(int age) {
+        boolean ok = age >= AgeCalc.THRESHOLD; int color = ok ? 0xFF63E6A0 : 0xFFFF7777;
+        ((TextView)resultCard.findViewById(android.R.id.icon)).setText(ok ? "✓" : "×");
+        ((TextView)resultCard.findViewById(android.R.id.icon)).setTextColor(color);
+        resultTitle.setText(ok ? "21 OR ABOVE" : "BELOW 21"); resultTitle.setTextColor(color);
+        resultAge.setText("Age: " + age + " years");
+        resultCard.setBackground(round(ok ? 0xDB192A31 : 0xDB391D2A, 23, ok ? 0x9963E6A0 : 0x99FF7777, 1));
+    }
+
+    private void showError(String message) {
+        TextView icon = resultCard.findViewById(android.R.id.icon); icon.setText("!"); icon.setTextColor(0xFFFF7777);
+        resultTitle.setText("CHECK THE DATE"); resultTitle.setTextColor(0xFFFF7777); resultAge.setText(message);
+    }
+
+    private void listen() {
+        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
+        i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Say your birth date");
+        try { startActivityForResult(i, SPEECH); }
+        catch (RuntimeException e) { Toast.makeText(this, "Speech recognition is unavailable. Please type the date.", Toast.LENGTH_LONG).show(); }
+    }
+
+    @Override protected void onActivityResult(int request, int code, Intent data) {
+        super.onActivityResult(request, code, data);
+        if (request != SPEECH || code != RESULT_OK || data == null) return;
+        ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+        if (results == null) return;
+        for (String heard : results) {
+            LocalDate date = DobParser.parseSpoken(heard);
+            if (date != null && !date.isAfter(LocalDate.now())) {
+                dob.setText(date.format(DobParser.DISPLAY));
+                resultTitle.setText("DATE RECOGNIZED"); resultTitle.setTextColor(0xFFE7E9F2);
+                resultAge.setText(date.format(DobParser.DISPLAY) + " — tap the arrow to confirm"); return;
+            }
         }
+        showError("I couldn't interpret that date. Please try again or type it.");
     }
+
+    private void showThemeDialog() {
+        final int originalTheme = Themes.selected(this), originalA = Themes.customA(this), originalB = Themes.customB(this);
+        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(dp(18), dp(8), dp(18), 0);
+        TextView preview = text("ABSTRACT FLOW PREVIEW", 16, Color.WHITE, true); preview.setGravity(Gravity.CENTER); preview.setPadding(0, dp(18), 0, dp(18));
+        int[] now = Themes.colors(this); preview.setBackground(gradient(now)); box.addView(preview, new LinearLayout.LayoutParams(-1, dp(78)));
+        GridLayout grid = new GridLayout(this); grid.setColumnCount(2);
+        for (int i = 0; i < Themes.NAMES.length; i++) {
+            final int choice = i; Button b = new Button(this); b.setText(Themes.NAMES[i]); b.setTextColor(Color.WHITE); b.setAllCaps(false); b.setBackground(gradient(Themes.PRESETS[i]));
+            b.setOnClickListener(v -> { Themes.applyPreset(this, choice); updateThemePreview(preview); });
+            GridLayout.LayoutParams gp = new GridLayout.LayoutParams(); gp.width = 0; gp.height = dp(58); gp.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); gp.setMargins(dp(3),dp(3),dp(3),dp(3)); grid.addView(b, gp);
+        }
+        box.addView(grid);
+        Button custom = new Button(this); custom.setText("Custom Theme — choose two colors"); custom.setAllCaps(false); custom.setOnClickListener(v -> showCustomPicker(preview)); box.addView(custom);
+        Button surprise = new Button(this); surprise.setText("Surprise Me"); surprise.setAllCaps(false); surprise.setOnClickListener(v -> { Themes.applyPreset(this, Themes.randomPreset(Themes.selected(this))); updateThemePreview(preview); }); box.addView(surprise);
+        Spinner auto = new Spinner(this); String[] modes = {"Auto Change: Off", "Auto Change: Every age check", "Auto Change: Daily (inexact)"}; auto.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, modes)); auto.setSelection(Themes.autoMode(this)); box.addView(auto);
+        ScrollView sc = new ScrollView(this); sc.addView(box);
+        AlertDialog d = new AlertDialog.Builder(this).setTitle("Color theme").setView(sc).setNegativeButton("Cancel", null).setPositiveButton("Apply", null).create();
+        d.setOnCancelListener(x -> Themes.apply(this, originalTheme, originalA, originalB));
+        d.setOnShowListener(x -> {
+            d.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> { Themes.apply(this, originalTheme, originalA, originalB); d.dismiss(); });
+            d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                Themes.setAutoMode(this, auto.getSelectedItemPosition()); ThemeAlarmReceiver.schedule(this);
+                ribbons.setColors(Themes.colors(this)); applyAccent(); AgeWidget.refresh(this); d.dismiss();
+            });
+        }); d.show();
+    }
+
+    private void showCustomPicker(TextView parentPreview) {
+        LinearLayout l = new LinearLayout(this); l.setPadding(dp(20), dp(8), dp(20), 0); l.setOrientation(LinearLayout.VERTICAL);
+        TextView p = text("CUSTOM GRADIENT", 16, Color.WHITE, true); p.setGravity(Gravity.CENTER); l.addView(p, new LinearLayout.LayoutParams(-1, dp(70)));
+        SeekBar a = hueBar(Themes.customA(this)), b = hueBar(Themes.customB(this)); l.addView(text("Color 1",14,Color.DKGRAY,true)); l.addView(a); l.addView(text("Color 2",14,Color.DKGRAY,true)); l.addView(b);
+        Runnable redraw = () -> p.setBackground(gradient(Themes.colorsFor(Themes.CUSTOM, hue(a), hue(b))));
+        SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener(){ public void onProgressChanged(SeekBar s,int x,boolean f){redraw.run();} public void onStartTrackingTouch(SeekBar s){} public void onStopTrackingTouch(SeekBar s){} }; a.setOnSeekBarChangeListener(listener); b.setOnSeekBarChangeListener(listener); redraw.run();
+        new AlertDialog.Builder(this).setTitle("Custom Theme").setView(l).setNegativeButton("Cancel",null).setPositiveButton("Use colors", (d,w) -> { Themes.apply(this, Themes.CUSTOM, hue(a), hue(b)); updateThemePreview(parentPreview); }).show();
+    }
+
+    private SeekBar hueBar(int color) { SeekBar s = new SeekBar(this); float[] hsv = new float[3]; Color.colorToHSV(color, hsv); s.setMax(359); s.setProgress(Math.round(hsv[0])); return s; }
+    private int hue(SeekBar s) { return Color.HSVToColor(new float[]{s.getProgress(), .78f, .94f}); }
+    private void updateThemePreview(TextView p) { p.setBackground(gradient(Themes.colors(this))); p.setText(Themes.name(Themes.selected(this)).toUpperCase(Locale.US)); }
+    private void applyAccent() { int c = Themes.buttonColor(Themes.colors(this)); submit.setBackgroundTintList(ColorStateList.valueOf(c)); submit.setTextColor(Themes.onColor(c)); }
+    private GradientDrawable gradient(int[] cs) { GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.TL_BR, cs); g.setCornerRadius(dp(14)); return g; }
+    private GradientDrawable round(int fill, int radius, int stroke, int sw) { GradientDrawable g = new GradientDrawable(); g.setColor(fill); g.setCornerRadius(dp(radius)); g.setStroke(dp(sw), stroke); return g; }
+    private LinearLayout row() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.HORIZONTAL); l.setGravity(Gravity.CENTER_VERTICAL); return l; }
+    private TextView text(String s, int size, int color, boolean bold) { TextView t = new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(color); t.setGravity(Gravity.CENTER_VERTICAL); if (bold) t.setTypeface(null, 1); return t; }
+    private Button button(String s, int width, int height) { Button b = new Button(this); b.setText(s); b.setTextColor(Color.WHITE); b.setTextSize(12); b.setMinWidth(0); b.setMinimumWidth(0); b.setPadding(dp(4),0,dp(4),0); b.setBackgroundTintList(ColorStateList.valueOf(0x553D4865)); b.setLayoutParams(new LinearLayout.LayoutParams(width, dp(height))); return b; }
+    private int dp(int n) { return Math.round(n * getResources().getDisplayMetrics().density); }
 }

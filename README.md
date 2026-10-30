@@ -1,19 +1,30 @@
-# Age Checker — Android home-screen widget
+# Age Checker — Abstract Flow Widget V2
 
-A native Android widget showing the last age-check result directly on the home screen, plus a tap-to-open animated date-entry screen with a breathing amber dot field and a moving spider.
+A native 4×3 Android home-screen widget with a static Abstract Flow ribbon composition and a compact, animated input panel. It supports manual or spoken DOB entry, accurate completed-year calculation, eight presets, custom two-color gradients, random themes, and optional automatic theme changes.
 
 ## Build without Android Studio
-1. Upload all files and folders to a **private** GitHub repository (keep `.github/workflows/build-apk.yml`).
+
+1. Push the project to GitHub.
 2. Open **Actions → Build Android APK → Run workflow**, or push to `main`.
-3. Open the completed run → **Artifacts → age-checker-debug-apk**.
-4. Extract the ZIP, transfer `app-debug.apk` to your Android phone, and install it. Android may ask you to allow installs from that source.
-5. Long-press home screen → **Widgets → Age Checker**, then add it.
+3. Download **age-checker-debug-apk** from the completed run's artifacts.
+4. Install `app-debug.apk`, then add **Age Checker** from the Samsung widget picker.
+
+Locally, when Gradle and the Android SDK are available:
+
+```text
+gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon
+```
+
+The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Usage
-Tap the widget to open the animated entry screen. Enter `MM/DD/YYYY` or tap the mic to invoke Android speech recognition. **Confirm the displayed date** and tap **CHECK AGE**. The result is updated on the home-screen widget. Speech input depends on the recognition services installed on the phone. For reliability, spoken dates should be verified; the parser intentionally rejects ambiguous transcriptions rather than guessing.
 
-## Important constraints
-Android home-screen widgets do not support normal editable fields or smooth continuous custom animation. The widget shows the result; input and animation run in a small companion Activity. This is a first prototype, not a production-ready alcohol ID verification system. It checks age only, not ID validity or other sale requirements. The prototype's spoken date parser handles dates recognized as month-name + numeric day + four-digit year, or numeric month/day/year; it does not yet support every possible natural-language transcription.
+Tap the DOB field or arrow to open the floating animated panel. The MIC target opens the panel and starts Android speech recognition. Enter `MMDDYYYY` or `MM/DD/YYYY`; eight digits format automatically. Confirm recognized speech by tapping the arrow. Use **COLORS** for presets, custom colors, Surprise Me, or automatic changes.
 
-## Date behavior
-The age check uses the phone's current local date. The widget's saved result is refreshed when opened/checked and by the Android widget update mechanism, not continuously at midnight.
+Android RemoteViews widgets cannot host editable fields or arbitrary 60 FPS custom animation. The widget therefore uses static Canvas artwork; the matching floating Activity animates only while visible. This utility checks an entered age, not identity or legal ID validity.
+
+The age check uses the phone's local date and `java.time`. Daily color changes use an inexact, battery-friendly alarm and may be batched by Android; exact midnight is intentionally not promised.
+
+## Automated verification
+
+Unit tests cover manual formatting and validation, spoken-date examples, leap dates, future dates, and the inclusive 21-year boundary. GitHub Actions runs the tests and debug build on pushes to `main`/`master` and manual dispatch, then uploads the APK.
