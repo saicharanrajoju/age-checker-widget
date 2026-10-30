@@ -155,6 +155,8 @@ final class RibbonPainter {
         float radius = 28 * density;
         RectF rect = new RectF(0, 0, w, h);
         Paint img = new Paint(Paint.ANTI_ALIAS_FLAG);
+        // Preserve enough transparency for the launcher wallpaper to softly show through.
+        img.setAlpha(218);
         img.setShader(new BitmapShader(scene, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
         c.drawRoundRect(rect, radius, radius, img);
         scene.recycle();

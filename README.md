@@ -1,6 +1,6 @@
 # Age Checker — Abstract Flow Widget V2
 
-A native 4×3 Android home-screen widget with a static Abstract Flow ribbon composition and a compact, animated input panel. It supports manual or spoken DOB entry, accurate completed-year calculation, eight presets, custom two-color gradients, random themes, and optional automatic theme changes.
+A compact native 4×2 Android home-screen widget with translucent static Abstract Flow artwork and a matching animated voice-input panel. It supports widget-native DOB entry, spoken DOB entry, accurate completed-year calculation, eight presets, custom two-color gradients, random themes, and automatic theme changes.
 
 ## Build without Android Studio
 
@@ -19,7 +19,7 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Usage
 
-Tap the DOB field or arrow to open the floating animated panel. The MIC target opens the panel and starts Android speech recognition. Enter `MMDDYYYY` or `MM/DD/YYYY`; eight digits format automatically. Confirm recognized speech by tapping the arrow. Use **COLORS** for presets, custom colors, Surprise Me, or automatic changes.
+Tap the DOB field, arrow, or **NEW** to enter eight digits directly inside the widget. **REFRESH** recalculates the saved DOB using today’s date across all installed widget instances. **VOICE** opens the animated panel and immediately starts Android speech recognition. Use **COLORS** in the panel for presets, custom colors, Surprise Me, or automatic changes.
 
 Android RemoteViews widgets cannot host editable fields or arbitrary 60 FPS custom animation. The widget therefore uses static Canvas artwork; the matching floating Activity animates only while visible. This utility checks an entered age, not identity or legal ID validity.
 

@@ -1,21 +1,23 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="6dp">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="5dp">
  <ImageView android:id="@+id/art" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:background="@drawable/widget_bg" android:contentDescription="Abstract flow background"/>
- <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="18dp" android:gravity="center_vertical">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="13dp" android:gravity="center_vertical">
   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-   <TextView android:id="@+id/title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Age Checker" android:textColor="#FFFFFF" android:textSize="19sp" android:textStyle="bold"/>
-   <TextView android:id="@+id/theme" android:layout_width="wrap_content" android:layout_height="32dp" android:gravity="center" android:paddingLeft="10dp" android:paddingRight="10dp" android:text="OCEAN" android:textColor="#C9D1E5" android:textSize="10sp"/>
+   <TextView android:id="@+id/title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Age Checker" android:textColor="#FFFFFF" android:textSize="17sp" android:textStyle="bold"/>
+   <TextView android:id="@+id/theme" android:layout_width="wrap_content" android:layout_height="26dp" android:gravity="center" android:paddingLeft="9dp" android:paddingRight="9dp" android:text="OCEAN" android:textColor="#C9D1E5" android:textSize="9sp"/>
   </LinearLayout>
-  <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="12dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/widget_field">
-   <TextView android:id="@+id/dob" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="15dp" android:paddingRight="6dp" android:text="MM/DD/YYYY" android:textColor="#DCE2F1" android:textSize="15sp"/>
-   <TextView android:id="@+id/mic" android:layout_width="52dp" android:layout_height="match_parent" android:gravity="center" android:text="VOICE" android:textColor="#D8DEED" android:textSize="10sp" android:textStyle="bold"/>
-   <TextView android:id="@+id/submit" android:layout_width="52dp" android:layout_height="match_parent" android:gravity="center" android:text="→" android:textColor="#FFFFFF" android:textSize="28sp"/>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="6dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/widget_field">
+   <TextView android:id="@+id/dob" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="13dp" android:paddingRight="5dp" android:text="MM/DD/YYYY" android:textColor="#DCE2F1" android:textSize="14sp"/>
+   <TextView android:id="@+id/mic" android:layout_width="50dp" android:layout_height="match_parent" android:gravity="center" android:text="VOICE" android:textColor="#D8DEED" android:textSize="9sp" android:textStyle="bold"/>
+   <TextView android:id="@+id/submit" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:text="→" android:textColor="#FFFFFF" android:textSize="23sp"/>
   </LinearLayout>
-  <LinearLayout android:id="@+id/result_card" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="62dp" android:layout_marginTop="12dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingLeft="14dp" android:paddingRight="14dp" android:background="@drawable/result_neutral">
-   <TextView android:id="@+id/result_icon" android:layout_width="46dp" android:layout_height="46dp" android:gravity="center" android:text="?" android:textColor="#FFFFFF" android:textSize="27sp"/>
-   <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginLeft="13dp">
-    <TextView android:id="@+id/result" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CHECK YOUR AGE" android:textColor="#FFFFFF" android:textSize="19sp" android:textStyle="bold"/>
-    <TextView android:id="@+id/age" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enter your date of birth" android:textColor="#CCD1DD" android:textSize="14sp"/>
+  <LinearLayout android:id="@+id/result_card" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="50dp" android:layout_marginTop="7dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingLeft="10dp" android:paddingRight="5dp" android:background="@drawable/result_neutral">
+   <TextView android:id="@+id/result_icon" android:layout_width="38dp" android:layout_height="38dp" android:gravity="center" android:text="?" android:textColor="#FFFFFF" android:textSize="23sp"/>
+   <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginLeft="9dp">
+    <TextView android:id="@+id/result" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="READY" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold"/>
+    <TextView android:id="@+id/age" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enter a date of birth" android:textColor="#CCD1DD" android:textSize="12sp"/>
    </LinearLayout>
+   <TextView android:id="@+id/action_new" android:layout_width="44dp" android:layout_height="match_parent" android:gravity="center" android:text="NEW" android:textColor="#E7EAF2" android:textSize="9sp" android:textStyle="bold"/>
+   <TextView android:id="@+id/action_refresh" android:layout_width="48dp" android:layout_height="match_parent" android:gravity="center" android:text="REFRESH" android:textColor="#BFC7D9" android:textSize="8sp" android:textStyle="bold"/>
   </LinearLayout>
  </LinearLayout>
 </FrameLayout>

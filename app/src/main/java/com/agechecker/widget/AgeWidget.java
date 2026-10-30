@@ -16,7 +16,7 @@ import java.util.Locale;
 public class AgeWidget extends AppWidgetProvider {
     private static final String PREFIX = "com.agechecker.widget.";
     private static final String START = PREFIX + "START_ENTRY", DIGIT = PREFIX + "DIGIT", BACK = PREFIX + "BACK";
-    private static final String DONE = PREFIX + "DONE", CANCEL = PREFIX + "CANCEL", THEME = PREFIX + "THEME";
+    private static final String DONE = PREFIX + "DONE", CANCEL = PREFIX + "CANCEL", THEME = PREFIX + "THEME", REFRESH = PREFIX + "REFRESH";
     private static final String EXTRA_ID = "widget_id", EXTRA_DIGIT = "digit";
 
     static void refresh(Context context) {
@@ -53,7 +53,8 @@ public class AgeWidget extends AppWidgetProvider {
         PendingIntent start = widgetAction(c, START, id, -1);
         v.setOnClickPendingIntent(R.id.dob, start);
         v.setOnClickPendingIntent(R.id.submit, start);
-        v.setOnClickPendingIntent(R.id.result_card, start);
+        v.setOnClickPendingIntent(R.id.action_new, start);
+        v.setOnClickPendingIntent(R.id.action_refresh, widgetAction(c, REFRESH, id, -1));
         v.setOnClickPendingIntent(R.id.mic, panelIntent(c, true));
         v.setOnClickPendingIntent(R.id.title, widgetAction(c, THEME, id, -1));
         v.setOnClickPendingIntent(R.id.theme, widgetAction(c, THEME, id, -1));
@@ -92,11 +93,15 @@ public class AgeWidget extends AppWidgetProvider {
             Themes.prefs(c).edit().putBoolean(entryKey, false).remove(draftKey).apply();
         } else if (THEME.equals(action)) {
             int current = Themes.selected(c); Themes.applyPreset(c, current >= 0 ? (current + 1) % Themes.PRESETS.length : 0);
+            refresh(c); return;
+        } else if (REFRESH.equals(action)) {
+            refresh(c); return;
         } else if (DONE.equals(action)) {
             DobParser.Parse parsed = DobParser.parseManual(draft, LocalDate.now());
             if (parsed.error == null) {
                 Themes.prefs(c).edit().putString("dob", parsed.date.format(DobParser.DISPLAY)).putBoolean(entryKey, false).remove(draftKey).remove("error_" + id).apply();
                 Themes.onAgeChecked(c);
+                refresh(c); return;
             } else Themes.prefs(c).edit().putBoolean("error_" + id, true).apply();
         }
         update(c, AppWidgetManager.getInstance(c), id);
@@ -114,7 +119,7 @@ public class AgeWidget extends AppWidgetProvider {
     private static PendingIntent widgetAction(Context c, String action, int id, int digit) {
         Intent i = new Intent(c, AgeWidget.class).setAction(action).putExtra(EXTRA_ID, id);
         if (digit >= 0) i.putExtra(EXTRA_DIGIT, digit);
-        int kind = START.equals(action) ? 1 : DIGIT.equals(action) ? 2 : BACK.equals(action) ? 3 : DONE.equals(action) ? 4 : CANCEL.equals(action) ? 5 : 6;
+        int kind = START.equals(action) ? 1 : DIGIT.equals(action) ? 2 : BACK.equals(action) ? 3 : DONE.equals(action) ? 4 : CANCEL.equals(action) ? 5 : THEME.equals(action) ? 6 : 7;
         int request = id * 1000 + kind * 20 + Math.max(0, digit);
         return PendingIntent.getBroadcast(c, request, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
