@@ -1,0 +1,13 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:gravity="center_vertical"
+    android:padding="16dp" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_bg">
+    <TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="◷  Age Checker" android:textColor="#FFFFFF" android:textSize="20sp" android:textStyle="bold"/>
+    <TextView android:id="@+id/dob" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" android:padding="10dp" android:text="Tap to enter DOB  •  🎙"
+        android:textColor="#FFE0C2" android:textSize="15sp" android:background="#BB171717"/>
+    <TextView android:id="@+id/result" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" android:text="Tap to check age" android:textColor="#FFB35F"
+        android:textSize="18sp" android:textStyle="bold"/>
+</LinearLayout>
