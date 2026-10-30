@@ -63,7 +63,7 @@ final class Themes {
         return r;
     }
 
-    static int autoMode(Context c) { return prefs(c).getInt(K_AUTO, AUTO_OFF); }
+    static int autoMode(Context c) { return prefs(c).getInt(K_AUTO, AUTO_EVERY_CHECK); }
 
     static void setAutoMode(Context c, int mode) {
         SharedPreferences.Editor e = prefs(c).edit().putInt(K_AUTO, mode);
